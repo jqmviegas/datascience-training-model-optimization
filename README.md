@@ -24,9 +24,7 @@ The directory structure of your new project looks like this (please adjust the s
 ├── notebooks          <- Jupyter notebooks for exploratory analysis.
 │
 ├── requirements.txt   <- Environmnet package requirements.
-│
-├── data_access.py     <- Module with the methods to read and write the data.
-│
+││
 ├── simulator.py       <- Module to simulate the system in "real-time".
 │
 ├── modeling.py        <- Module with functions to train, run and evaluate models.

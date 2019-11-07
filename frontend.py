@@ -4,8 +4,22 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 from simulator import Simulator
+from modeling import Modeling
 import pandas as pd
 import plotly.graph_objects as go
+
+settings = {
+    'inputs': [
+        's1',
+        's2'
+    ],
+    'output': 'g2',
+    'time_var': 'dt'
+}
+
+time_var = settings['time_var']
+output = settings['output']
+output_model = output+'_prediction'
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -27,6 +41,7 @@ path_stream_data = os.path.join(path_project, 'database', 'raw_data.csv')
 path_database = os.path.join(path_project, 'database', 'database.csv')
 
 sim = Simulator(path_stream_data, path_database)
+model = Modeling()
 
 app.layout = html.Div(children=[
     # Storage in application for database
@@ -34,13 +49,22 @@ app.layout = html.Div(children=[
     dcc.Store(id='store-clock'),
     # Div for controls
     html.Div([
-        html.Button('Start simulation', id='button-start-simulation',
-                    n_clicks_timestamp=0, style={'backgroundColor': colors['light-green']}),
-        html.Button('Pause simulation', id='button-pause-simulation',
-                    n_clicks_timestamp=0, style={'margin-left': '10px', 'backgroundColor': colors['light-yellow']}),
-        html.Button('Reset simulation', id='button-reset-simulation',
-                    n_clicks_timestamp=0, style={'margin-left': '10px', 'backgroundColor': colors['light-red']}),
+        html.Div([
+            html.H6('Digital Twin Simulator'),
+        ], className='four columns'),
+        html.Div([
+            html.Button('Start', id='button-start-simulation',
+                        n_clicks_timestamp=0,
+                        style={'backgroundColor': colors['light-green'], 'borderColor': 'yellow'}),
+            html.Button('Pause', id='button-pause-simulation',
+                        n_clicks_timestamp=0, style={'margin-left': '10px', 'backgroundColor': colors['light-yellow'],
+                                                     'borderColor': 'yellow'}),
+            html.Button('Reset', id='button-reset-simulation',
+                        n_clicks_timestamp=0, style={'margin-left': '10px', 'backgroundColor': colors['light-red'],
+                                                     'borderColor': 'yellow'}),
+        ], className='four columns', style={'margin-top': '5px'})
     ],
+        className='row',
         style={'backgroundColor': colors['yellow'],
                'padding': '10px'}
     ),
@@ -48,26 +72,48 @@ app.layout = html.Div(children=[
     html.Div([
         # Div for space 1
         html.Div([
-            html.H3('Column 1'),
+            html.H3('Sensors'),
             dcc.Graph(id='graph-sensors')
         ], className="six columns"),
         # Div for space 2
         html.Div([
-            html.H3('Column 2'),
-            dcc.Graph(id='g2', figure={'data': [{'y': [1, 2, 3]}]})
+            html.H3('Output'),
+            dcc.Graph(id='graph-interest')
         ], className="six columns"),
     ], className="row"),
     # Div for row 3 (spaces 3 and 4)
     html.Div([
         # Div for space 3
         html.Div([
-            html.H3('Column 3'),
-            dcc.Graph(id='g3', figure={'data': [{'y': [1, 2, 3]}]})
+            html.H3('Model training'),
+            html.Div([
+                dcc.Input(
+                    placeholder='Parameter 1...', id='input-1',
+                    type='text', value=''
+                ),
+                dcc.Input(
+                    placeholder='Parameter 2...', id='input-2',
+                    type='text', value='', style={'margin-left': '10px'}
+                ),
+            ], className='row'),
+            html.Div([
+                html.Button('Train model (base struct)', id='button-train-model',
+                            style={'margin-top': '10px', 'background-color': colors['yellow'],
+                                   'margin-right': '10px'}),
+                html.Button('Train model (change struct)', id='button-train-model-struct',
+                            style={'margin-top': '10px', 'background-color': colors['yellow'],
+                                   'margin-bottom': '10px'}),
+            ], className='row'),
+            dcc.Markdown('''
+                **Model messages:**
+                
+                This space is used for model messages.
+            ''', id='markdown-messages')
         ], className="six columns"),
         # Div for space 4
         html.Div([
-            html.H3('Column 4'),
-            dcc.Graph(id='g4', figure={'data': [{'y': [1, 2, 3]}]})
+            html.H3('Model performance'),
+            dcc.Graph(id='graph-performance')
         ], className="six columns"),
     ], className="row"),
     dcc.Interval(
@@ -78,31 +124,76 @@ app.layout = html.Div(children=[
 ])
 
 
-@app.callback(Output('graph-sensors', 'figure'),
+def pivot_sensors(df):
+    """
+    Returns the pivoted data of sensors
+    """
+    df_sensors = pd.pivot_table(df, index=[time_var], columns=['sensor'], values='value').reset_index()
+
+    return df_sensors
+
+
+@app.callback([Output('graph-sensors', 'figure'),
+               Output('graph-interest', 'figure'),
+               Output('graph-performance', 'figure')],
               [Input('store-database', 'data')])
 def update_graphs(database):
     if database is not None:
         df_database = pd.DataFrame.from_records(database)
-        df_sensors = pd.pivot_table(df_database, index=['dt'], columns=['sensor'], values='value').reset_index()
+        df_sensors = pivot_sensors(df_database)
 
-        fig = go.Figure()
+        fig_sensors = go.Figure()
 
-        fig.add_trace(go.Scatter(x=df_sensors['dt'], y=df_sensors['s1'],
-                                 mode='lines+markers',
-                                 name='s1'))
+        for input in settings['inputs']:
+            fig_sensors.add_trace(go.Scatter(x=df_sensors[time_var], y=df_sensors[input],
+                                     mode='lines+markers',
+                                     name=input))
 
-        fig.add_trace(go.Scatter(x=df_sensors['dt'], y=df_sensors['s2'],
-                                 mode='lines+markers',
-                                 name='s2'))
+        # Run model here to present output (if it exists)
+        fig_interest = go.Figure()
 
-        fig.add_trace(go.Scatter(x=df_sensors['dt'], y=df_sensors['g2'],
-                                 mode='lines+markers',
-                                 name='g2'))
+        fig_interest.add_trace(go.Scatter(x=df_sensors[time_var], y=df_sensors[output],
+                                         mode='lines+markers',
+                                         name=output))
 
-        return fig
+        df_sensors[output_model] = 0
+        fig_interest.add_trace(go.Scatter(x=df_sensors[time_var], y=df_sensors[output_model],
+                                         mode='lines+markers',
+                                         name=output_model))
+
+
+        # Evaluate measures here if, at least show the upper and lower limits
+        df_performance = df_sensors.copy()
+        performance_measures = model.performance_measures
+        performance_lines = []
+
+        fig_performance = go.Figure()
+
+        for measure in performance_measures:
+            min_col = 'Min. {}'.format(measure)
+            max_col = 'Max. {}'.format(measure)
+            df_performance[min_col] = performance_measures[measure]['min']
+            df_performance[max_col] = performance_measures[measure]['max']
+
+            performance_lines.append(min_col)
+            performance_lines.append(max_col)
+
+            color = performance_measures[measure]['color']
+
+            fig_performance.add_trace(go.Scatter(x=df_performance[time_var], y=df_performance[min_col],
+                                                 mode='lines',
+                                                 name=min_col,
+                                                 line=dict(dash='dot', color=color)))
+
+            fig_performance.add_trace(go.Scatter(x=df_performance[time_var], y=df_performance[max_col],
+                                                 mode='lines',
+                                                 name=max_col,
+                                                 line=dict(dash='dot', color=color)))
+
+        return fig_sensors, fig_interest, fig_performance
 
     else:
-        return {}
+        return {}, {}, {}
 
 
 @app.callback(Output('interval-component', 'interval'),
@@ -119,6 +210,7 @@ def start_simulation(n_start, n_pause, n_reset):
         return 1 * 1000
     else:
         return 60 * 60 * 1000
+
 
 @app.callback([Output('store-database', 'data'),
                Output('store-clock', 'data')],
@@ -140,6 +232,7 @@ def update_database(n, clock):
         print('clock {}'.format(clock))
 
     return database.to_dict('records'), clock
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
