@@ -7,6 +7,9 @@ class Simulator:
     def __init__(self, path_stream_data, path_database):
         self.path = path_database
         self.path_stream = path_stream_data
+        self.stream = None
+        self.time_start = None
+        self.time = None
 
     def start(self):
         self.stream = pd.read_csv(self.path_stream, parse_dates=['dt'])

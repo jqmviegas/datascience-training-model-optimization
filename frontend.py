@@ -10,10 +10,11 @@ import plotly.graph_objects as go
 
 settings = {
     'inputs': [
-        's1',
-        's2'
+        'i1',
+        'i2',
+        'i3'
     ],
-    'output': 'g2',
+    'output': 'o1',
     'time_var': 'dt'
 }
 
@@ -41,7 +42,7 @@ path_stream_data = os.path.join(path_project, 'database', 'raw_data.csv')
 path_database = os.path.join(path_project, 'database', 'database.csv')
 
 sim = Simulator(path_stream_data, path_database)
-model = Modeling()
+model = Modeling(settings)
 
 app.layout = html.Div(children=[
     # Storage in application for database
@@ -97,18 +98,15 @@ app.layout = html.Div(children=[
                 ),
             ], className='row'),
             html.Div([
-                html.Button('Train model (base struct)', id='button-train-model',
+                html.Button('Train model (base struct)', id='button-train-model', n_clicks_timestamp=0,
                             style={'margin-top': '10px', 'background-color': colors['yellow'],
                                    'margin-right': '10px'}),
-                html.Button('Train model (change struct)', id='button-train-model-struct',
+                html.Button('Train model (change struct)', id='button-train-model-struct', n_clicks_timestamp=0,
                             style={'margin-top': '10px', 'background-color': colors['yellow'],
                                    'margin-bottom': '10px'}),
             ], className='row'),
-            dcc.Markdown('''
-                **Model messages:**
-                
-                This space is used for model messages.
-            ''', id='markdown-messages')
+            html.H6('Modeling messages:'),
+            html.P(id='modeling-messages')
         ], className="six columns"),
         # Div for space 4
         html.Div([
@@ -129,6 +127,7 @@ def pivot_sensors(df):
     Returns the pivoted data of sensors
     """
     df_sensors = pd.pivot_table(df, index=[time_var], columns=['sensor'], values='value').reset_index()
+    df_sensors[time_var] = pd.to_datetime(df_sensors[time_var])
 
     return df_sensors
 
@@ -156,8 +155,9 @@ def update_graphs(database):
                                          mode='lines+markers',
                                          name=output))
 
-        df_sensors[output_model] = 0
-        fig_interest.add_trace(go.Scatter(x=df_sensors[time_var], y=df_sensors[output_model],
+        df_preds = model.run_model(df_sensors)
+
+        fig_interest.add_trace(go.Scatter(x=df_preds[time_var], y=df_preds[output_model],
                                          mode='lines+markers',
                                          name=output_model))
 
@@ -190,6 +190,22 @@ def update_graphs(database):
                                                  name=max_col,
                                                  line=dict(dash='dot', color=color)))
 
+        df_performance_values = model.evaluate_model(df_sensors, df_preds)
+
+        if df_performance_values is not None:
+            for measure in performance_measures:
+                color = performance_measures[measure]['color']
+
+                fig_performance.add_trace(go.Scatter(x=df_performance_values[time_var], y=df_performance_values[measure],
+                                                     mode='lines',
+                                                     name=measure,
+                                                     line=dict(color=color)))
+
+        if len(df_sensors) > 10:
+            fig_sensors.layout.xaxis.range = [df_sensors.iloc[-10][time_var], df_sensors.iloc[-1][time_var]]
+            fig_interest.layout.xaxis.range = [df_sensors.iloc[-10][time_var], df_sensors.iloc[-1][time_var]]
+            fig_performance.layout.xaxis.range = [df_sensors.iloc[-10][time_var], df_sensors.iloc[-1][time_var]]
+
         return fig_sensors, fig_interest, fig_performance
 
     else:
@@ -207,6 +223,7 @@ def start_simulation(n_start, n_pause, n_reset):
         return 60 * 60 * 1000
     elif int(n_reset) > int(n_start) and int(n_reset) > int(n_pause):
         sim.start()
+        model.reset()
         return 1 * 1000
     else:
         return 60 * 60 * 1000
@@ -234,6 +251,29 @@ def update_database(n, clock):
     return database.to_dict('records'), clock
 
 
+@app.callback(Output('modeling-messages', 'children'),
+              [Input('button-train-model', 'n_clicks_timestamp'),
+               Input('button-train-model-struct', 'n_clicks_timestamp')],
+              [State('store-database', 'data')])
+def start_simulation(n_train, n_train_struct, database):
+    if int(n_train) > int(n_train_struct):
+        df_database = pd.DataFrame.from_records(database)
+        df_sensors = pivot_sensors(df_database)
+
+        train_log = model.train_model(df_sensors)
+
+        return train_log
+    elif int(n_train_struct) > int(n_train):
+        df_database = pd.DataFrame.from_records(database)
+        df_sensors = pivot_sensors(df_database)
+
+        train_log = model.train_model(df_sensors)
+
+        return train_log
+    else:
+        train_log = 'No model currently trained.'
+        return train_log
+
+
 if __name__ == '__main__':
     app.run_server(debug=True)
-
