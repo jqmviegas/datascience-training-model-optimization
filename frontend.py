@@ -51,8 +51,8 @@ app.layout = html.Div(children=[
     # Div for controls
     html.Div([
         html.Div([
-            html.H6('Digital Twin Simulator'),
-        ], className='four columns'),
+            html.H6('Digital Twin'),
+        ], className='four columns', style={'padding-left': '10px'}),
         html.Div([
             html.Button('Start', id='button-start-simulation',
                         n_clicks_timestamp=0,
@@ -110,8 +110,8 @@ app.layout = html.Div(children=[
         ], className="six columns"),
         # Div for space 4
         html.Div([
-            html.H3('Model performance'),
-            dcc.Graph(id='graph-performance')
+            html.H3('Monitoring'),
+            dcc.Graph(id='graph-monitoring')
         ], className="six columns"),
     ], className="row"),
     dcc.Interval(
@@ -134,7 +134,7 @@ def pivot_sensors(df):
 
 @app.callback([Output('graph-sensors', 'figure'),
                Output('graph-interest', 'figure'),
-               Output('graph-performance', 'figure')],
+               Output('graph-monitoring', 'figure')],
               [Input('store-database', 'data')])
 def update_graphs(database):
     if database is not None:
@@ -164,7 +164,7 @@ def update_graphs(database):
 
         # Evaluate measures here if, at least show the upper and lower limits
         df_performance = df_sensors.copy()
-        performance_measures = model.performance_measures
+        performance_measures = model.monitor_measures
         performance_lines = []
 
         fig_performance = go.Figure()
@@ -190,7 +190,7 @@ def update_graphs(database):
                                                  name=max_col,
                                                  line=dict(dash='dot', color=color)))
 
-        df_performance_values = model.evaluate_model(df_sensors, df_preds)
+        df_performance_values = model.monitor_model(df_sensors, df_preds)
 
         if df_performance_values is not None:
             for measure in performance_measures:
@@ -254,20 +254,27 @@ def update_database(n, clock):
 @app.callback(Output('modeling-messages', 'children'),
               [Input('button-train-model', 'n_clicks_timestamp'),
                Input('button-train-model-struct', 'n_clicks_timestamp')],
-              [State('store-database', 'data')])
-def start_simulation(n_train, n_train_struct, database):
+              [State('store-database', 'data'),
+               State('input-1', 'value'),
+               State('input-2', 'value')])
+def start_simulation(n_train, n_train_struct, database, param1, param2):
+    params = {
+        'param1': param1,
+        'param2': param2
+    }
+
     if int(n_train) > int(n_train_struct):
         df_database = pd.DataFrame.from_records(database)
         df_sensors = pivot_sensors(df_database)
 
-        train_log = model.train_model(df_sensors)
+        train_log = model.train_model(df_sensors, params)
 
         return train_log
     elif int(n_train_struct) > int(n_train):
         df_database = pd.DataFrame.from_records(database)
         df_sensors = pivot_sensors(df_database)
 
-        train_log = model.train_model(df_sensors)
+        train_log = model.train_model(df_sensors, params)
 
         return train_log
     else:

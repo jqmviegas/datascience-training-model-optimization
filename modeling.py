@@ -1,7 +1,7 @@
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error, r2_score
 import numpy as np
 import pandas as pd
+from scipy.stats import pearsonr
 
 
 class Modeling:
@@ -10,17 +10,22 @@ class Modeling:
         self.model = None
         self.predictions = None
         self.last_prediction_dt = None
-        self.performance = None
-        self.performance_measures = {
+        self.monitor = None
+        self.monitor_measures = {
             'rmse': {
                 'min': -1,
                 'max': 1,
                 'color': 'blue'
             },
-            'corr': {
+            'corr_i1i2': {
                 'min': 0.6,
                 'max': -0.6,
                 'color': 'red'
+            },
+            'i3': {
+                'min': -1,
+                'max': 1,
+                'color': 'green'
             }
         }
         self.settings = settings
@@ -30,9 +35,9 @@ class Modeling:
         self.model = None
         self.predictions = None
         self.last_prediction_dt = None
-        self.performance = None
+        self.monitor = None
 
-    def train_model(self, df):
+    def train_model(self, df, params):
         """ Train model
         Receives data and trains the model, updates self.model
 
@@ -51,7 +56,7 @@ class Modeling:
 
         rmse_train = np.sqrt(((y_train_pred - y_train) ** 2).mean())
 
-        messages = 'Linear regression model trained. Training RMSE = {0}'.format(rmse_train)
+        messages = 'Linear regression model trained. Training RMSE = {0}. Params: {1}.'.format(rmse_train, str(params))
 
         self.status = 'trained'
 
@@ -100,7 +105,7 @@ class Modeling:
 
         return self.predictions
 
-    def evaluate_model(self, df, df_preds):
+    def monitor_model(self, df, df_preds):
         """ Evaluate model performance
 
         Parameters
@@ -117,7 +122,7 @@ class Modeling:
         output = self.settings['output']
         output_prediction = self.settings['output']+'_prediction'
 
-        df_performance = pd.DataFrame(columns=list(self.performance_measures.keys()))
+        df_performance = pd.DataFrame(columns=list(self.monitor_measures.keys()))
         if self.status is None:
             return None
         else:
@@ -126,11 +131,12 @@ class Modeling:
         df_preds = df_preds.iloc[-10:]
         df = df.iloc[-10:]
         df_performance.loc[0, 'rmse'] = np.sqrt(((df_preds[output_prediction] - df[output]) ** 2).mean())
-        df_performance.loc[0, 'corr'] = r2_score(df[output], df_preds[output_prediction])
+        df_performance.loc[0, 'corr_i1i2'] = pearsonr(df['i1'], df['i2'])[0]
+        df_performance.loc[0, 'i3'] = df['i3'].mean()
 
         try:
-            self.performance = self.performance.append(df_performance, ignore_index=True).reset_index(drop=True)
+            self.monitor = self.monitor.append(df_performance, ignore_index=True).reset_index(drop=True)
         except Exception as e:
-            self.performance = df_performance
+            self.monitor = df_performance
 
-        return self.performance
+        return self.monitor
