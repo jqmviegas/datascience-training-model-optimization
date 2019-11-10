@@ -62,3 +62,41 @@ The directory structure of your new project looks like this (please adjust the s
 └── frontend.py        <- Front-end application.
 ```
 
+## Installation guide in Windows (no administrator rights required)
+
+### 1. Download Miniconda if you don't have it already (or Anaconda)
+![Alt](docs/win-installation/Capture1.PNG)
+
+### 2. Make sure to install it for "Just me", and in you user folder
+![Alt](docs/win-installation/Capture2.PNG)
+
+### 3. Add Anaconda to your PATH environment variable
+![Alt](docs/win-installation/Capture3.PNG)
+
+### 4. Download the repository from GitHub, if you are familiar with git you can also clone it wherever you want
+![Alt](docs/win-installation/Capture4.PNG)
+
+### 5. Unpack the code folder, point to it in a Command Line and create the conda environment
+![Alt](docs/win-installation/Capture5.PNG)
+
+### 6. Install the required libraries using pip
+![Alt](docs/win-installation/Capture6.PNG)
+
+### 7. Open the project with PyCharm
+![Alt](docs/win-installation/Capture7.PNG)
+
+### 8. Go to Settings to configure the Python interpreter
+![Alt](docs/win-installation/Capture8.PNG)
+
+### 9. Choose the existing Conda Environment you created before (named ds)
+![Alt](docs/win-installation/Capture9.PNG)
+
+### 10. Open the file "frontend.py"
+![Alt](docs/win-installation/Capture10.PNG)
+
+### 11. Go to Run > Run > Frontend (it may take a while to be available after changing the Python interpreter)
+![Alt](docs/win-installation/Capture11.PNG)
+
+### 12. Verify that the frontend is working in your browser (does not work in Edge)
+![Alt](docs/win-installation/Capture12.PNG)
+
