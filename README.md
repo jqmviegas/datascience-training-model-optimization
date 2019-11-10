@@ -1,6 +1,14 @@
 # Data Science Training - Model Optimization
 
-## Installation of required tools and Python environment
+## Table of contents
+
+1. [Installation of required tools](#installation-general)
+2. [Other information](#other-information)
+3. [Project structure](#project-structure)
+4. [Installation guide for Windows](#installation-windows)
+
+
+## Installation of required tools and Python environment <a name="installation-general"></a>
 
 ### 1. Installing Miniconda
 
@@ -32,13 +40,13 @@ Development is recommended to be done using PyCharm Community, which can be down
 [here](https://www.jetbrains.com/pycharm/download/). After opening the code folder with PyCharm, 
 sure to configure the correct conda environment to be the one on which the code runs.
 
-## Other information 
+## Other information <a name="other-information"></a>
 
 ### Updating requirements file
 
     pip freeze > requirements.txt
 
-### Folder structure
+## Project structure <a name="project-structure"></a>
 
 The directory structure of your new project looks like this (please adjust the structure and its description to best fit your project): 
 
@@ -62,7 +70,7 @@ The directory structure of your new project looks like this (please adjust the s
 └── frontend.py        <- Front-end application.
 ```
 
-## Installation guide in Windows (no administrator rights required)
+## Installation guide in Windows (no administrator rights required) <a name="installation-windows"></a>
 
 ### 1. Download Miniconda if you don't have it already (or Anaconda)
 ![Alt](docs/win-installation/Capture1.PNG)
