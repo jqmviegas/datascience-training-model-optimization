@@ -10,11 +10,13 @@ import plotly.graph_objects as go
 
 settings = {
     'inputs': [
-        'i1',
-        'i2',
-        'i3'
+        'u1',
+        'u2',
+        'y1',
+        'y2',
+        'y4'
     ],
-    'output': 'o1',
+    'output': 'y3',
     'time_var': 'dt'
 }
 
@@ -141,24 +143,26 @@ def update_graphs(database):
         df_database = pd.DataFrame.from_records(database)
         df_sensors = pivot_sensors(df_database)
 
+        print(len(df_sensors))
+
         fig_sensors = go.Figure()
 
         for input in settings['inputs']:
             fig_sensors.add_trace(go.Scatter(x=df_sensors[time_var], y=df_sensors[input],
-                                     mode='lines+markers',
+                                     mode='lines',
                                      name=input))
 
         # Run model here to present output (if it exists)
         fig_interest = go.Figure()
 
         fig_interest.add_trace(go.Scatter(x=df_sensors[time_var], y=df_sensors[output],
-                                         mode='lines+markers',
+                                         mode='lines',
                                          name=output))
 
         df_preds = model.run_model(df_sensors)
 
         fig_interest.add_trace(go.Scatter(x=df_preds[time_var], y=df_preds[output_model],
-                                         mode='lines+markers',
+                                         mode='lines',
                                          name=output_model))
 
 
@@ -201,10 +205,10 @@ def update_graphs(database):
                                                      name=measure,
                                                      line=dict(color=color)))
 
-        if len(df_sensors) > 10:
-            fig_sensors.layout.xaxis.range = [df_sensors.iloc[-10][time_var], df_sensors.iloc[-1][time_var]]
-            fig_interest.layout.xaxis.range = [df_sensors.iloc[-10][time_var], df_sensors.iloc[-1][time_var]]
-            fig_performance.layout.xaxis.range = [df_sensors.iloc[-10][time_var], df_sensors.iloc[-1][time_var]]
+        if len(df_sensors) > 200:
+            fig_sensors.layout.xaxis.range = [df_sensors.iloc[-200][time_var], df_sensors.iloc[-1][time_var]]
+            fig_interest.layout.xaxis.range = [df_sensors.iloc[-200][time_var], df_sensors.iloc[-1][time_var]]
+            fig_performance.layout.xaxis.range = [df_sensors.iloc[-200][time_var], df_sensors.iloc[-1][time_var]]
 
         return fig_sensors, fig_interest, fig_performance
 
@@ -218,13 +222,13 @@ def update_graphs(database):
                Input('button-reset-simulation', 'n_clicks_timestamp')])
 def start_simulation(n_start, n_pause, n_reset):
     if int(n_start) > int(n_pause) and int(n_start) > int(n_reset):
-        return 1 * 1000
+        return 5 * 1000
     elif int(n_pause) > int(n_start) and int(n_pause) > int(n_reset):
         return 60 * 60 * 1000
     elif int(n_reset) > int(n_start) and int(n_reset) > int(n_pause):
         sim.start()
         model.reset()
-        return 1 * 1000
+        return 5 * 1000
     else:
         return 60 * 60 * 1000
 
@@ -235,7 +239,7 @@ def start_simulation(n_start, n_pause, n_reset):
               [State('store-clock', 'data')])
 def update_database(n, clock):
     if n != 0:
-        sim.step(1)
+        sim.step(60*10)
     else:
         sim.start()
 

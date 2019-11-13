@@ -1,4 +1,5 @@
 from sklearn.linear_model import LinearRegression
+from sklearn.neural_network import MLPRegressor
 import numpy as np
 import pandas as pd
 from scipy.stats import pearsonr
@@ -17,12 +18,12 @@ class Modeling:
                 'max': 1,
                 'color': 'blue'
             },
-            'corr_i1i2': {
+            'corr_y1y4': {
                 'min': 0.6,
                 'max': -0.6,
                 'color': 'red'
             },
-            'i3': {
+            'corr_y2y4': {
                 'min': -1,
                 'max': 1,
                 'color': 'green'
@@ -50,6 +51,7 @@ class Modeling:
         y_train = df[self.settings['output']].values
 
         self.model = LinearRegression()
+        # self.model = MLPRegressor(hidden_layer_sizes=(10,), activation='tanh')
         self.model.fit(X_train, y_train)
 
         y_train_pred = self.model.predict(X_train)
@@ -123,16 +125,17 @@ class Modeling:
         output_prediction = self.settings['output']+'_prediction'
 
         df_performance = pd.DataFrame(columns=list(self.monitor_measures.keys()))
-        if self.status is None:
+        if len(df) < 60:
             return None
         else:
             df_performance.loc[0, time_var] = self.last_prediction_dt
 
-        df_preds = df_preds.iloc[-10:]
-        df = df.iloc[-10:]
+        df_preds = df_preds.iloc[-60:]
+        df = df.iloc[-60:]
         df_performance.loc[0, 'rmse'] = np.sqrt(((df_preds[output_prediction] - df[output]) ** 2).mean())
-        df_performance.loc[0, 'corr_i1i2'] = pearsonr(df['i1'], df['i2'])[0]
-        df_performance.loc[0, 'i3'] = df['i3'].mean()
+        df_performance.loc[0, 'corr_y1y4'] = pearsonr(df['y1'], df['y4'])[0]
+        df_performance.loc[0, 'corr_y2y4'] = pearsonr(df['y2'], df['y4'])[0]
+        # df_performance.loc[0, 'y3'] = df['y3'].mean()
 
         try:
             self.monitor = self.monitor.append(df_performance, ignore_index=True).reset_index(drop=True)

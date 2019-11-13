@@ -39,7 +39,7 @@ nbconvert==5.6.1
 nbformat==4.4.0
 notebook==6.0.2
 numpy==1.17.3
-ortools
+ortools==6.7.4973
 pandas==0.25.3
 pandocfilters==1.4.2
 parso==0.5.1
@@ -71,4 +71,5 @@ wcwidth==0.1.7
 webencodings==0.5.1
 Werkzeug==0.16.0
 widgetsnbextension==3.5.1
+xlrd==1.2.0
 zipp==0.6.0
