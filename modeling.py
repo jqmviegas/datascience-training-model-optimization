@@ -18,15 +18,25 @@ class Modeling:
                 'max': 1,
                 'color': 'blue'
             },
-            'corr_y1y4': {
-                'min': 0.6,
-                'max': -0.6,
+            'corr_y2y4': {
+                'min': 1,
+                'max': -1,
                 'color': 'red'
             },
-            'corr_y2y4': {
+            'corr_y2y3': {
                 'min': -1,
                 'max': 1,
                 'color': 'green'
+            },
+            'corr_u1y3': {
+                'min': -1,
+                'max': 1,
+                'color': 'brown'
+            },
+            'corr_u2y2': {
+                'min': -1,
+                'max': 1,
+                'color': 'orange'
             }
         }
         self.settings = settings
@@ -89,7 +99,8 @@ class Modeling:
             self.last_prediction_dt = self.predictions[time_var].max()
         else:
             df = df.loc[df[time_var] > self.last_prediction_dt]
-            predict_with_model = True
+            if len(df):
+                predict_with_model = True
 
         if predict_with_model:
             """
@@ -133,8 +144,10 @@ class Modeling:
         df_preds = df_preds.iloc[-60:]
         df = df.iloc[-60:]
         df_performance.loc[0, 'rmse'] = np.sqrt(((df_preds[output_prediction] - df[output]) ** 2).mean())
-        df_performance.loc[0, 'corr_y1y4'] = pearsonr(df['y1'], df['y4'])[0]
         df_performance.loc[0, 'corr_y2y4'] = pearsonr(df['y2'], df['y4'])[0]
+        df_performance.loc[0, 'corr_y2y3'] = pearsonr(df['y2'], df['y3'])[0]
+        df_performance.loc[0, 'corr_u1y3'] = pearsonr(df['u1'], df['y3'])[0]
+        df_performance.loc[0, 'corr_u2y2'] = pearsonr(df['u2'], df['y2'])[0]
         # df_performance.loc[0, 'y3'] = df['y3'].mean()
 
         try:

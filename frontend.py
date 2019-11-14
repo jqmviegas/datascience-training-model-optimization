@@ -11,12 +11,14 @@ import plotly.graph_objects as go
 settings = {
     'inputs': [
         'u1',
-        'u2',
-        'y1',
+        'u2'
+    ],
+    'unknown': [
         'y2',
+        'y3',
         'y4'
     ],
-    'output': 'y3',
+    'output': 'y1',
     'time_var': 'dt'
 }
 
@@ -148,6 +150,11 @@ def update_graphs(database):
         fig_sensors = go.Figure()
 
         for input in settings['inputs']:
+            fig_sensors.add_trace(go.Scatter(x=df_sensors[time_var], y=df_sensors[input],
+                                     mode='lines',
+                                     name=input))
+
+        for input in settings['unknown']:
             fig_sensors.add_trace(go.Scatter(x=df_sensors[time_var], y=df_sensors[input],
                                      mode='lines',
                                      name=input))
