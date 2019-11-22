@@ -14,12 +14,20 @@ settings = {
         'u2'
     ],
     'unknown': [
-        'y2',
+        'y1',
         'y3',
         'y4'
     ],
-    'output': 'y1',
-    'time_var': 'dt'
+    'output': 'y2',
+    'time_var': 'dt',
+    'feat_lags': {'y2': [6], 'u1': [6, 7, 8], 'u2': [6, 7, 8]},
+    'features': [
+        'y2l6',
+        'u1',
+        'u2',
+        'u1l6',
+        'u2l6'
+    ]
 }
 
 time_var = settings['time_var']
@@ -44,9 +52,11 @@ path_project = os.path.abspath(
 
 path_stream_data = os.path.join(path_project, 'database', 'raw_data.csv')
 path_database = os.path.join(path_project, 'database', 'database.csv')
+path_model = os.path.join(path_project, 'models', 'lr.pkl')
 
 sim = Simulator(path_stream_data, path_database)
 model = Modeling(settings)
+model.load(path_model)
 
 app.layout = html.Div(children=[
     # Storage in application for database
@@ -235,6 +245,7 @@ def start_simulation(n_start, n_pause, n_reset):
     elif int(n_reset) > int(n_start) and int(n_reset) > int(n_pause):
         sim.start()
         model.reset()
+        model.load(path_model)
         return 5 * 1000
     else:
         return 60 * 60 * 1000
@@ -284,6 +295,13 @@ def start_simulation(n_train, n_train_struct, database, param1, param2):
     elif int(n_train_struct) > int(n_train):
         df_database = pd.DataFrame.from_records(database)
         df_sensors = pivot_sensors(df_database)
+
+        settings['features'] = [
+            'y2l6',
+            'u1',
+            'u1l6'
+        ]
+        model.settings = settings
 
         train_log = model.train_model(df_sensors, params)
 
